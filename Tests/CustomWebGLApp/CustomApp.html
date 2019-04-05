@@ -1,0 +1,126 @@
+<html>
+
+<head>
+    <title>CustomApp</title>
+    <style>
+        body{background-color: darkgray; margin: 0%}
+    </style>
+
+    <!-- References -->
+    <script id="glMatrix" src="../../WebGLApp/glMatrix-0.9.5.min.js"></script>
+    <script id="glsl" src="../../WebGLApp/webgl-utils.js"></script>
+
+    <script id="glScript", type="application/javascript">
+    
+        var gl;
+
+        function initWebGL(canvas)
+        {
+            gl = null;
+            try 
+            {
+                gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+            }
+            catch(e) {}
+            
+            if (!gl) {
+                alert("Could not initialize WebGL.");
+                gl = null;
+            }
+
+            return gl;
+        }
+
+        function Start()
+        {
+            canvas = document.getElementById("glCanvas");
+            gl = initWebGL(canvas);
+            if(gl)
+            {
+                //Black
+                gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                gl.enable(gl.DEPTH_TEST);                               
+                gl.depthFunc(gl.LEQUAL);
+                gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+
+                const shaderProgram = InitShaderProgram();
+
+                vertexPositionLoc = gl.getAttribLocation(shaderProgram, "vertexPosition");
+                
+
+            }
+        }
+
+        function InitShaderProgram()
+        {
+            const VertexShader = LoadShader(gl.VERTEX_SHADER, "VertexShader");
+            const FragmentShader = LoadShader(gl.FRAGMENT_SHADER, "FragmentShader")
+
+            const ShaderProgram = gl.createProgram();
+            gl.attachShader(ShaderProgram, VertexShader);
+            gl.attachShader(ShaderProgram, FragmentShader);
+            gl.linkProgram(ShaderProgram);
+
+            if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) 
+            {
+                alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
+                return null;
+            }
+            
+            return shaderProgram;
+        }
+
+        function LoadShader(type, scriptID)
+        {
+            shaderScript = document.getElementById(scriptID).textContent;
+
+            const shader = gl.createShader(type);
+            
+            gl.shaderSource(shader, shaderScript);
+            gl.compileShader(shader);
+            
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) 
+            {
+                alert('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+
+            return shader;
+        }
+
+    </script>
+
+    <script id="VertexShader" type="v-Shader">
+        
+        //External input for each vertex
+        attribute vec4 vertexPosition;
+        
+        //External input, same for all the vertex
+        uniform mat4 ModelMatrix;
+        uniform mat4 ProjectionMatrix;
+
+        void main()
+        {
+            gl_Position = ProjectionMatrix * ModelMatrix * vertexPosition;
+        }
+
+    </script>
+
+    <script id="FragmentShader" type="f-Shader">
+
+        void main()
+        {
+            //All the pixels are white
+            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        }
+
+    </script>
+
+</head>
+
+<body onload="Start()" onresize="Start()">
+    <canvas id="glCanvas" style="border: none; width:100%; height:100%; margin: 0 auto;">Tu navegador parece no soportar el elemento HTML5 <code>&lt;canvas&gt;</code>.</canvas>
+</body>
+
+</html>
