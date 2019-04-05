@@ -1,0 +1,74 @@
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Pestaña de la muerte</title>
+        <style>
+            body {background-color:wheat;}
+            h1 {color:darkgoldenrod;}
+            h2{color:red}
+            p {color: blue;}
+           
+        </style> 
+    </head>
+    <body onload="OnLoad()">
+         
+    <h1>Testeos con HTML y JavaScript</h1>
+    
+    <p id = "1"> Párrafo 1 </p> 
+    <p id = "2"> Párrafo 2 </p>
+    <p id = "3"> Párrafo 3 </p>
+    
+    <br>
+    Ahora mismo es: 
+    <p id="Fecha" style="color:rgb(255, 47, 47); border:1px dashed red; padding: 1%; width: 25%; display:inline-block; margin-left: 0.5%;"></p>
+    <br>
+
+    <select name="Parrafo Seleccionado" id = "Dropdown">
+        <option value="1">Parrafo 1</option>
+        <option value="2">Parrafo 2</option>
+        <option value="3">Parrafo 3</option>
+    </select> 
+
+    <br><br>
+
+    Nuevo texto: &nbsp;&nbsp;<input type="text" id="NuevoTexto"> <br><br>
+
+    <button type="button" onclick="ChangeParragraph()"> Cambiar Parrafo</button>
+
+    <script>
+            var inputText = document.getElementById("NuevoTexto");
+            var dropdown = document.getElementById("Dropdown");
+            var fecha = document.getElementById("Fecha");
+
+            function ChangeParragraph()
+            {
+                document.getElementById(dropdown.value).innerHTML = inputText.value;
+            }
+
+            function SetDisplay()
+            {
+                if(screen.width < 800)
+                {
+                    fecha.style.display = "block"
+                    fecha.style.width = "75%"
+                    fecha.style.padding = "5%"
+                }
+            }
+
+            function CheckDate()
+            {              
+                fecha.innerHTML = new Date();
+                setInterval(CheckDate, 1000);
+            }
+
+            function OnLoad()
+            {
+                CheckDate();
+                SetDisplay();            
+            }
+        
+    </script>   
+
+
+    </body>
+</html>
