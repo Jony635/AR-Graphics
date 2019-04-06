@@ -3,11 +3,11 @@
 <head>
     <title>CustomApp</title>
     <style>
-        body{background-color: darkgray; margin: 0%}
+        body{background-color: white; margin: 0%}
     </style>
 
     <!-- References -->
-    <script id="glMatrix" src="../../WebGLApp/glMatrix-0.9.5.min.js"></script>
+    <script id="glMatrixMin" src="gl-matrix-min.js"></script>
     <script id="glsl" src="../../WebGLApp/webgl-utils.js"></script>
 
     <script id="glScript", type="application/javascript">
@@ -34,40 +34,106 @@
         function Start()
         {
             canvas = document.getElementById("glCanvas");
+
+            //Fullscreen
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            //Init WebGL context
             gl = initWebGL(canvas);
             if(gl)
             {
-                //Black
-                gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                gl.enable(gl.DEPTH_TEST);                               
-                gl.depthFunc(gl.LEQUAL);
-                gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-
-                const shaderProgram = InitShaderProgram();
-
-                vertexPositionLoc = gl.getAttribLocation(shaderProgram, "vertexPosition");
-                
-
+                DrawScene();
             }
+        }
+
+        function DrawScene()
+        {
+            //Clear the screen
+            gl.clearColor(0.0, 0.0, 0.0, 1.0);
+            gl.enable(gl.DEPTH_TEST);                               
+            gl.depthFunc(gl.LEQUAL);
+            gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+
+            //Get the shader program
+            const shaderProgram = InitShaderProgram();
+
+            //Get the attibutes and uniforms location
+            vertexPositionLoc = gl.getAttribLocation(shaderProgram, "vertexPosition");
+            projectionMatrixLoc = gl.getUniformLocation(shaderProgram, "ProjectionMatrix");
+            modelMatrixLoc = gl.getUniformLocation(shaderProgram, "ModelMatrix");
+
+            //Create the projection matrix
+            const fieldOfView = 45 * Math.PI / 180;
+            const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+            const zNear = 0.1;
+            const zfar = 100.0;
+
+            var projectionMatrix = glMatrix.mat4.create();
+            glMatrix.mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zfar);
+
+            //Create the model matrix
+            const modelViewMatrix = glMatrix.mat4.create();
+            glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [position[0], position[1], -20.0]);
+
+            //Create the vertexPositionBuffer
+            positionBufferID = InitBuffers();
+
+            //Bind the position buffer and set the settings for WebGL to read it properly
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBufferID);
+            gl.vertexAttribPointer(positionBufferID, 2, gl.FLOAT, false, 0, 0);
+
+            //Bind the position buffer with the attribute vertexPosition
+            gl.enableVertexAttribArray(vertexPositionLoc);
+
+            //Start using our shaderProgram
+            gl.useProgram(shaderProgram);
+
+            //Setup our uniforms
+            gl.uniformMatrix4fv(projectionMatrixLoc, false, projectionMatrix);
+            gl.uniformMatrix4fv(modelMatrixLoc, false, modelViewMatrix);
+
+            //Draw the scene
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        }
+
+        function InitBuffers()
+        {
+            const positionBufferID = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBufferID);
+
+            const vertex = 
+            [
+                1.0,  1.0,
+                -1.0,  1.0,
+                1.0, -1.0,
+                -1.0, -1.0
+            ];
+
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertex), gl.STATIC_DRAW);
+
+            return positionBufferID;
         }
 
         function InitShaderProgram()
         {
             const VertexShader = LoadShader(gl.VERTEX_SHADER, "VertexShader");
+            
             const FragmentShader = LoadShader(gl.FRAGMENT_SHADER, "FragmentShader")
+
 
             const ShaderProgram = gl.createProgram();
             gl.attachShader(ShaderProgram, VertexShader);
             gl.attachShader(ShaderProgram, FragmentShader);
             gl.linkProgram(ShaderProgram);
 
-            if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) 
+            if (!gl.getProgramParameter(ShaderProgram, gl.LINK_STATUS)) 
             {
-                alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
+                alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(ShaderProgram));
                 return null;
             }
-            
-            return shaderProgram;
+
+            return ShaderProgram;
         }
 
         function LoadShader(type, scriptID)
@@ -112,15 +178,48 @@
         void main()
         {
             //All the pixels are white
-            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+            gl_FragColor = vec4(0.3, 1.0, 0.3, 1.0);
         }
 
     </script>
-
 </head>
 
 <body onload="Start()" onresize="Start()">
-    <canvas id="glCanvas" style="border: none; width:100%; height:100%; margin: 0 auto;">Tu navegador parece no soportar el elemento HTML5 <code>&lt;canvas&gt;</code>.</canvas>
+
+    <p style="margin:1%; display: inline-block">Position X:</p> <input id="PositionX" type="range" min="-10" max="10" step="0.1" defaultValue = "0" oninput="PositionXChanged(this.value)" style="display:inline-block; margin-top: 1%"></input>
+    <p style="margin:1%; display: inline-block">Position Y:</p> <input id="PositionY" type="range" min="-5" max="5" step="0.1" defaultValue = "0" oninput="PositionYChanged(this.value)" style="display:inline-block; margin-top: 1%; margin-right: 2%"></input>
+
+    <button onclick="ResetPosition()">Reset Position</button>
+
+    <!-- We define the width and height in a script, we cant get the window size from the html code for fullscreen -->
+    <canvas id="glCanvas" style="border:none; width:100%; height:93.5%;">Tu navegador parece no soportar el elemento HTML5 <code>&lt;canvas&gt;</code>.</canvas>
+
+    <script id="PositionChanger">
+
+            var positionXSlider = document.getElementById("PositionX");
+            var positionYSlider = document.getElementById("PositionY");
+
+            var position = [positionXSlider.value, positionYSlider.value];
+    
+            function PositionXChanged(newValue)
+            {
+                position[0] = newValue;
+                DrawScene();
+            }
+            function PositionYChanged(newValue)
+            {
+                position[1] = newValue;
+                DrawScene();
+            }
+            function ResetPosition()
+            {
+                position = [0,0];
+                positionXSlider.value = 0;
+                positionYSlider.value = 0;
+                DrawScene();
+            }
+    
+        </script>
 </body>
 
 </html>
