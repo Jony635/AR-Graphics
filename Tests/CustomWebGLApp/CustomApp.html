@@ -2,6 +2,7 @@
 
 <head>
     <title>CustomApp</title>
+    <meta content="width=device-width, user-scalable=no">
     <style>
         body{background-color: white; margin: 0%}
     </style>
@@ -63,6 +64,8 @@
             projectionMatrixLoc = gl.getUniformLocation(shaderProgram, "ProjectionMatrix");
             modelMatrixLoc = gl.getUniformLocation(shaderProgram, "ModelMatrix");
 
+            vertexColorLoc = gl.getAttribLocation(shaderProgram, "vertexColor");
+
             //Create the projection matrix
             const fieldOfView = 45 * Math.PI / 180;
             const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
@@ -77,14 +80,19 @@
             glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [position[0], position[1], -20.0]);
 
             //Create the vertexPositionBuffer
-            positionBufferID = InitBuffers();
+            buffers = InitBuffers();
+            positionBufferID = buffers[0];
 
-            //Bind the position buffer and set the settings for WebGL to read it properly
+            //SetUp the vertexPositions
             gl.bindBuffer(gl.ARRAY_BUFFER, positionBufferID);
             gl.vertexAttribPointer(positionBufferID, 2, gl.FLOAT, false, 0, 0);
-
-            //Bind the position buffer with the attribute vertexPosition
             gl.enableVertexAttribArray(vertexPositionLoc);
+
+            //SetUp the vertexColors
+            colorBufferID = buffers[1];
+            gl.bindBuffer(gl.ARRAY_BUFFER, colorBufferID); 
+            gl.vertexAttribPointer(vertexColorLoc, 4, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(vertexColorLoc);
 
             //Start using our shaderProgram
             gl.useProgram(shaderProgram);
@@ -94,6 +102,7 @@
             gl.uniformMatrix4fv(modelMatrixLoc, false, modelViewMatrix);
 
             //Draw the scene
+            
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         }
 
@@ -112,7 +121,19 @@
 
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertex), gl.STATIC_DRAW);
 
-            return positionBufferID;
+            const colors = 
+            [
+                1.0, 0.0, 0.0, 1.0, //Red
+                0.0, 1.0, 0.0, 1.0, //Green
+                0.0, 0.0, 1.0, 1.0, //Blue
+                1.0, 1.0, 1.0, 1.0  //White
+            ];
+
+            const colorBufferID = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, colorBufferID);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+
+            return [positionBufferID, colorBufferID];
         }
 
         function InitShaderProgram()
@@ -161,24 +182,30 @@
         
         //External input for each vertex
         attribute vec4 vertexPosition;
+        attribute vec4 vertexColor;
         
         //External input, same for all the vertex
         uniform mat4 ModelMatrix;
         uniform mat4 ProjectionMatrix;
 
+        //External output to the fragment shader
+        varying lowp vec4 color;
+
         void main()
         {
             gl_Position = ProjectionMatrix * ModelMatrix * vertexPosition;
+            color = vertexColor;
         }
 
     </script>
 
     <script id="FragmentShader" type="f-Shader">
 
+        varying lowp vec4 color;
+
         void main()
         {
-            //All the pixels are white
-            gl_FragColor = vec4(0.3, 1.0, 0.3, 1.0);
+            gl_FragColor = color;
         }
 
     </script>
