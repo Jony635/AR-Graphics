@@ -3,7 +3,7 @@
         <title>WebGL Application</title>
         <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
 
-        <script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
+        <script type="text/javascript" src="glMatrix-0.9.5.js"></script>
         <script type="text/javascript" src="webgl-utils.js"></script>
 
         <script id="shader-vs" type="x-shader/x-vertex">
@@ -222,6 +222,16 @@
                 deltaWheelY = 0;
             }
 
+            function UpdateCameraTransformMatrix()
+            {
+                mat4.identity(mMatrix);
+                mat4.translate(mMatrix, [cameraPosition.x, cameraPosition.y, cameraPosition.z]);
+                mat4.rotateX(mMatrix, cameraRotation.x * (Math.PI / 180));
+                mat4.rotateY(mMatrix, cameraRotation.y * (Math.PI / 180));
+                mat4.rotateZ(mMatrix, cameraRotation.z * (Math.PI / 180));         
+                mat4.inverse(mMatrix, vMatrix);
+            }
+
             function drawScene() {
                 gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -229,12 +239,7 @@
                 mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
                 
                 //Camera transformation
-                mat4.identity(mMatrix);
-                mat4.rotateX(mMatrix, cameraRotation.x * (Math.PI / 180));
-                mat4.rotateY(mMatrix, cameraRotation.y * (Math.PI / 180));
-                mat4.rotateZ(mMatrix, cameraRotation.z * (Math.PI / 180));
-                mat4.translate(mMatrix, [cameraPosition.x, cameraPosition.y, cameraPosition.z]);
-                mat4.inverse(mMatrix, vMatrix);
+                UpdateCameraTransformMatrix();
                 
                 gl.activeTexture(gl.TEXTURE0);
                 gl.bindTexture(gl.TEXTURE_2D, textures.myTexture);
@@ -355,6 +360,9 @@
                 if(mouseButtons[1])
                 {
                     //Panning
+
+                    //TODO: APPLY THE ACTUAL ROTATION OF THE CAMERA TO THE PANNING DIRECTION
+
                     cameraPosition.x -= event.movementX * cameraPanningSpeed;
                     cameraPosition.y += event.movementY * cameraPanningSpeed;
                 }
@@ -362,6 +370,8 @@
                 if(mouseButtons[0])
                 {
                     //Rotation
+
+                    //TODO: APPLY THE ACTUAL ROTATION OF THE CAMERA TO THE PREVIOUS ROTATION
                     cameraRotation.x -= event.movementY * cameraRotationSpeed;
                     cameraRotation.y -= event.movementX * cameraRotationSpeed;
                 }
@@ -372,25 +382,83 @@
                 if(keyboard[87] == true)
                 {
                     //W pressed
-                    cameraPosition.z -= cameraMovementSpeed;
+
+                    //Multiply the vector 0 0 1 with the Camera transform matrix, 
+                    //make it unitary and multiply with the speed to move
+
+                    var rotMat = mat4.create();
+                    mat4.toRotationMat(mMatrix, rotMat);
+
+                    var dir = vec3.create([0,0,1]);
+
+                    mat4.multiplyVec3(rotMat, dir, dir);     
+
+                    vec3.normalize(dir, dir);
+                
+                    vec3.scale(dir, cameraMovementSpeed, dir);
+
+                    cameraPosition.x -= dir[0];
+                    cameraPosition.y -= dir[1];
+                    cameraPosition.z -= dir[2];
                 }
 
                 if(keyboard[83] == true)
                 {
                     //S pressed
-                    cameraPosition.z += cameraMovementSpeed;
+
+                    var rotMat = mat4.create();
+                    mat4.toRotationMat(mMatrix, rotMat);
+
+                    var dir = vec3.create([0,0,-1]);
+
+                    mat4.multiplyVec3(rotMat, dir, dir);     
+
+                    vec3.normalize(dir, dir);
+                
+                    vec3.scale(dir, cameraMovementSpeed, dir);
+
+                    cameraPosition.x -= dir[0];
+                    cameraPosition.y -= dir[1];
+                    cameraPosition.z -= dir[2];
                 }
 
                 if(keyboard[65] == true)
                 {
                     //A pressed
-                    cameraPosition.x -= cameraMovementSpeed;
+
+                    var rotMat = mat4.create();
+                    mat4.toRotationMat(mMatrix, rotMat);
+
+                    var dir = vec3.create([1,0,0]);
+
+                    mat4.multiplyVec3(rotMat, dir, dir);     
+
+                    vec3.normalize(dir, dir);
+                
+                    vec3.scale(dir, cameraMovementSpeed, dir);
+
+                    cameraPosition.x -= dir[0];
+                    cameraPosition.y -= dir[1];
+                    cameraPosition.z -= dir[2];
                 }
 
                 if(keyboard[68] == true)
                 {
                     //D pressed
-                    cameraPosition.x += cameraMovementSpeed;
+                    var rotMat = mat4.create();
+                    mat4.toRotationMat(mMatrix, rotMat);
+
+                    var dir = vec3.create([-1,0,0]);
+
+                    mat4.multiplyVec3(rotMat, dir, dir);     
+
+                    vec3.normalize(dir, dir);
+                
+                    vec3.scale(dir, cameraMovementSpeed, dir);
+
+                    cameraPosition.x -= dir[0];
+                    cameraPosition.y -= dir[1];
+                    cameraPosition.z -= dir[2];
                 }
 
                 if(keyboard[82] == true)
@@ -402,7 +470,20 @@
 
                 if(deltaWheelY != 0)
                 {
-                    cameraPosition.z += deltaWheelY * cameraMovementSpeed;
+                    var rotMat = mat4.create();
+                    mat4.toRotationMat(mMatrix, rotMat);
+
+                    var dir = vec3.create([0,0,-1]);
+
+                    mat4.multiplyVec3(rotMat, dir, dir);     
+
+                    vec3.normalize(dir, dir);
+                
+                    vec3.scale(dir, cameraMovementSpeed * deltaWheelY, dir);
+
+                    cameraPosition.x -= dir[0];
+                    cameraPosition.y -= dir[1];
+                    cameraPosition.z -= dir[2];
                 }
             }
 
