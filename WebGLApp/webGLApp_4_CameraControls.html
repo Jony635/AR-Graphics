@@ -251,6 +251,7 @@
                 gl.bindBuffer(gl.ARRAY_BUFFER, triTextureCoords);
                 gl.vertexAttribPointer(shaderProgram.textureCoordsAttribute, triTextureCoords.itemSize, gl.FLOAT, false, 0, 0);
 
+                //TODO: USE PUSHMATRIX
                 mat4.identity(mvMatrix);
                 mat4.translate(mvMatrix, [-1.5, 0.0, 0.0]);
                 mat4.multiply(vMatrix, mvMatrix, mvMatrix);
@@ -264,6 +265,7 @@
                 gl.bindBuffer(gl.ARRAY_BUFFER, quadTextureCoords);
                 gl.vertexAttribPointer(shaderProgram.textureCoordsAttribute, quadTextureCoords.itemSize, gl.FLOAT, false, 0, 0); 
                 
+                //TODO: USE PUSHMATRIX
                 mat4.identity(mvMatrix);
                 mat4.translate(mvMatrix, [1.5, 0.0, 0.0]);
                 mat4.multiply(vMatrix, mvMatrix, mvMatrix);
@@ -361,10 +363,32 @@
                 {
                     //Panning
 
-                    //TODO: APPLY THE ACTUAL ROTATION OF THE CAMERA TO THE PANNING DIRECTION
+                    var rotMat = mat4.create();
+                    mat4.toRotationMat(mMatrix, rotMat);
 
-                    cameraPosition.x -= event.movementX * cameraPanningSpeed;
-                    cameraPosition.y += event.movementY * cameraPanningSpeed;
+                    var dir = vec3.create([1,0,0]);
+
+                    mat4.multiplyVec3(rotMat, dir, dir);     
+
+                    vec3.normalize(dir, dir);
+                
+                    vec3.scale(dir, event.movementX * cameraPanningSpeed, dir);
+
+                    cameraPosition.x -= dir[0];
+                    cameraPosition.y -= dir[1];
+                    cameraPosition.z -= dir[2];
+                    
+                    dir = vec3.create([0,1,0]);
+
+                    mat4.multiplyVec3(rotMat, dir, dir);     
+
+                    vec3.normalize(dir, dir);
+                
+                    vec3.scale(dir, event.movementY * cameraPanningSpeed, dir);
+
+                    cameraPosition.x += dir[0];
+                    cameraPosition.y += dir[1];
+                    cameraPosition.z += dir[2];
                 }
 
                 if(mouseButtons[0])
