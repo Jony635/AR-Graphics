@@ -114,9 +114,10 @@
             var pMatrix = mat4.create();
             var vMatrix = mat4.create();
             var mMatrix = mat4.create();
+            var cameraRotationMat = mat4.create();
+            mat4.identity(cameraRotationMat);
 
             var cameraPosition = {x:0, y:0, z:10};
-            var cameraRotation = {x:0, y:0, z:0};
 
             function sendMatricesToShader() {
                 gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
@@ -226,9 +227,7 @@
             {
                 mat4.identity(mMatrix);
                 mat4.translate(mMatrix, [cameraPosition.x, cameraPosition.y, cameraPosition.z]);
-                mat4.rotateX(mMatrix, cameraRotation.x * (Math.PI / 180));
-                mat4.rotateY(mMatrix, cameraRotation.y * (Math.PI / 180));
-                mat4.rotateZ(mMatrix, cameraRotation.z * (Math.PI / 180));         
+                mat4.multiply(mMatrix, cameraRotationMat, mMatrix);
                 mat4.inverse(mMatrix, vMatrix);
             }
 
@@ -245,19 +244,22 @@
                 gl.bindTexture(gl.TEXTURE_2D, textures.myTexture);
                 gl.uniform1i(shaderProgram.samplerUniform, 0);
 
+
+                //DRAW OBJECTS
+
                 //Tri
                 gl.bindBuffer(gl.ARRAY_BUFFER, triVertexPositionBuffer);
                 gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, triVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
                 gl.bindBuffer(gl.ARRAY_BUFFER, triTextureCoords);
                 gl.vertexAttribPointer(shaderProgram.textureCoordsAttribute, triTextureCoords.itemSize, gl.FLOAT, false, 0, 0);
 
-                //TODO: USE PUSHMATRIX
+                PushMatrix();
                 mat4.identity(mvMatrix);
                 mat4.translate(mvMatrix, [-1.5, 0.0, 0.0]);
                 mat4.multiply(vMatrix, mvMatrix, mvMatrix);
-
                 sendMatricesToShader();
                 gl.drawArrays(gl.TRIANGLE_STRIP, 0, triVertexPositionBuffer.numItems);
+                PopMatrix()
 
                 //Quad
                 gl.bindBuffer(gl.ARRAY_BUFFER, quadVertexPositionBuffer);
@@ -265,14 +267,13 @@
                 gl.bindBuffer(gl.ARRAY_BUFFER, quadTextureCoords);
                 gl.vertexAttribPointer(shaderProgram.textureCoordsAttribute, quadTextureCoords.itemSize, gl.FLOAT, false, 0, 0); 
                 
-                //TODO: USE PUSHMATRIX
+                PushMatrix();
                 mat4.identity(mvMatrix);
                 mat4.translate(mvMatrix, [1.5, 0.0, 0.0]);
                 mat4.multiply(vMatrix, mvMatrix, mvMatrix);
-
                 sendMatricesToShader();
-
                 gl.drawArrays(gl.TRIANGLE_STRIP, 0, quadVertexPositionBuffer.numItems);  
+                PopMatrix();
             }
 
             function webGLStart() 
@@ -307,16 +308,25 @@
             function PushMatrix()
             {
                 var copy = mat4.create();
-                mat4.set(copy, mvMatrix);
+                mat4.set(mvMatrix, copy);
                 matrixStack.push(copy);
-
-                mat4.identity(mvMatrix);
             }
 
             function PopMatrix()
             {
                 if(matrixStack.length != 0)
                     mvMatrix = matrixStack.pop();
+            }
+
+            //Maths
+            function deg2Rad(number)
+            {
+                return number * (Math.PI / 180);
+            }
+
+            function rad2Deg(number)
+            {
+                return number * (180 / Math.PI);
             }
 
             //Input
@@ -395,9 +405,16 @@
                 {
                     //Rotation
 
-                    //TODO: APPLY THE ACTUAL ROTATION OF THE CAMERA TO THE PREVIOUS ROTATION
-                    cameraRotation.x -= event.movementY * cameraRotationSpeed;
-                    cameraRotation.y -= event.movementX * cameraRotationSpeed;
+                    if(event.movementX == 0 && event.movementY == 0)
+                        return;
+
+                    var newRot = mat4.create();
+                    mat4.identity(newRot);
+
+                    mat4.rotate(newRot, deg2Rad(event.movementX / 10), [0,1,0], newRot);
+                    mat4.rotate(newRot, deg2Rad(event.movementY / 10), [1,0,0], newRot);
+
+                    mat4.multiply(newRot, cameraRotationMat, cameraRotationMat);
                 }
             }
 
@@ -489,7 +506,7 @@
                 {
                     //R pressed
                     cameraPosition.x = cameraPosition.y = 0; cameraPosition.z = 10;
-                    cameraRotation.x = cameraRotation.y = cameraRotation.z = 0;
+                    mat4.identity(cameraRotationMat);
                 }
 
                 if(deltaWheelY != 0)
