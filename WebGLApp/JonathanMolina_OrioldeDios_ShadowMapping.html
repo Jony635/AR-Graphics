@@ -45,7 +45,7 @@
             varying vec3 normalEye;
             varying vec4 positionEye;
 
-            const vec3 lightPosEye = vec3(-1.0, 3.0, 0.0);
+            const vec3 lightPosEye = vec3(-60.0/3.0, 60.0, 0.0); //Move far away the light in order to illuminate the whole plane, keeping the original direction
 
             void main(void) 
             {
@@ -185,6 +185,39 @@
             var triVertexPositionBuffer;
             var triTextureCoords;
 
+            function loadInternalGeometry()
+            {
+                var planeVertex = 
+                [
+                    0.5, 0, -0.5,
+                    0.5, 0, 0.5,
+                    -0.5, 0, -0.5,                             
+                    -0.5, 0, 0.5
+                ]
+
+                var modelVertexPosBuffer = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, modelVertexPosBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(planeVertex), gl.STATIC_DRAW);
+                modelVertexPosBuffer.itemSize = 3;
+                modelVertexPosBuffer.numItems = 4;
+
+                var planeNormals = 
+                [
+                    0, 1, 0,
+                    0, 1, 0,
+                    0, 1, 0,
+                    0, 1, 0
+                ]
+
+                var modelVertexNormalBuffer = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, modelVertexNormalBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(planeNormals), gl.STATIC_DRAW);
+                modelVertexNormalBuffer.itemSize = 3;
+                modelVertexNormalBuffer.numItems = 4;
+
+                models.push(new Model(modelVertexPosBuffer, modelVertexNormalBuffer, null, null));
+            }
+
             function loadModelsOnGPU()
             {
                 var request = new XMLHttpRequest();
@@ -311,54 +344,85 @@
                 //Light properties
                 gl.uniform3fv(shaderProgram.IaUniform, [0.3, 0.3, 0.3]);
                 gl.uniform3fv(shaderProgram.IdUniform, [0.5, 0.5, 0.5]);
-                gl.uniform3fv(shaderProgram.IsUniform, [1.0, 1.0, 1.0]);
+                gl.uniform3fv(shaderProgram.IsUniform, [1.0, 1.0, 1.0]);                
 
-                //Material properties (color)
-                gl.uniform3fv(shaderProgram.KaUniform, [1.0, 0.3, 0.0]);
-                gl.uniform3fv(shaderProgram.KdUniform, [1.0, 0.3, 0.0]);
-                gl.uniform3fv(shaderProgram.KsUniform, [1.0, 1.0, 1.0]);    
-                gl.uniform1f(shaderProgram.shininessUniform, 1.0);
-                
                 //DRAW OBJECTS
                 models.forEach
                 ( 
                     function(model, index)
                     {
-                        //Position
-                        gl.bindBuffer(gl.ARRAY_BUFFER, model.modelVertexPosBuffer);
-                        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, model.modelVertexPosBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-                        //Normals
-                        gl.bindBuffer(gl.ARRAY_BUFFER, model.modelVertexNormalBuffer);
-                        gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, model.modelVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-                        //Indices
-                        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.modelVertexIndexBuffer);
-
-                        PushMatrix();
-
-                        if(index == 0)
+                        if(index == 0) //The internal plane, without index
                         {
-                            mat4.identity(mvMatrix);      
-                            mat4.scale(mvMatrix, [0.1, 0.1, 0.1], mvMatrix);
-                            mat4.multiply(vMatrix, mvMatrix, mvMatrix);
-                        }
-                        else
-                        {
-                            mat4.identity(mvMatrix); 
-                            mat4.translate(mvMatrix, [5,-0.5,0], mvMatrix);  
-                            mat4.rotateX(mvMatrix, deg2Rad(-80), mvMatrix);
-                            mat4.scale(mvMatrix, [1.5, 1.5, 1.5], mvMatrix);
+                            //Position
+                            gl.bindBuffer(gl.ARRAY_BUFFER, model.modelVertexPosBuffer);
+                            gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, model.modelVertexPosBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+                            //Normals
+                            gl.bindBuffer(gl.ARRAY_BUFFER, model.modelVertexNormalBuffer);
+                            gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, model.modelVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+                            PushMatrix();
+
+                            mat4.identity(mvMatrix);     
+                            mat4.translate(mvMatrix, [2, -3, 0], mvMatrix); 
+                            mat4.rotateX(mvMatrix, deg2Rad(180), mvMatrix); 
+                            mat4.scale(mvMatrix, [30, 1, 30], mvMatrix);
                             mat4.multiply(vMatrix, mvMatrix, mvMatrix);
 
-                            gl.uniform3fv(shaderProgram.KaUniform, [0.1, 0.6, 1.0]);
-                            gl.uniform3fv(shaderProgram.KdUniform, [0.1, 0.6, 1.0]);
+                            gl.uniform3fv(shaderProgram.KaUniform, [0.5, 0.5, 0.5]);
+                            gl.uniform3fv(shaderProgram.KdUniform, [0.5, 0.5, 0.5]);
+                            gl.uniform3fv(shaderProgram.KsUniform, [0.3, 0.3, 0.3]);
+                            gl.uniform1f(shaderProgram.shininessUniform, 1);
+
+                            sendMatricesToShader();
+                            PopMatrix();
+                            gl.drawArrays(gl.TRIANGLE_STRIP, 0, model.modelVertexPosBuffer.numItems);
                         }
+
+                        else //The loaded models
+                        {                    
+                            gl.uniform3fv(shaderProgram.KsUniform, [1.0, 1.0, 1.0]);         
+                            gl.uniform1f(shaderProgram.shininessUniform, 1.0);
+
+                            //Position
+                            gl.bindBuffer(gl.ARRAY_BUFFER, model.modelVertexPosBuffer);
+                            gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, model.modelVertexPosBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+                            //Normals
+                            gl.bindBuffer(gl.ARRAY_BUFFER, model.modelVertexNormalBuffer);
+                            gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, model.modelVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+                            //Indices
+                            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.modelVertexIndexBuffer);
+
+                            PushMatrix();
+
+                            if(index == 1)
+                            {
+                                mat4.identity(mvMatrix);      
+                                mat4.scale(mvMatrix, [0.1, 0.1, 0.1], mvMatrix);
+                                mat4.multiply(vMatrix, mvMatrix, mvMatrix);
+
+                                gl.uniform3fv(shaderProgram.KaUniform, [1.0, 0.3, 0.0]);
+                                gl.uniform3fv(shaderProgram.KdUniform, [1.0, 0.3, 0.0]);
+                            }
+                            else if (index == 2)
+                            {
+                                mat4.identity(mvMatrix); 
+                                mat4.translate(mvMatrix, [5,-0.5,0], mvMatrix);  
+                                mat4.rotateX(mvMatrix, deg2Rad(-80), mvMatrix);
+                                mat4.scale(mvMatrix, [1.5, 1.5, 1.5], mvMatrix);
+                                mat4.multiply(vMatrix, mvMatrix, mvMatrix);
+
+                                gl.uniform3fv(shaderProgram.KaUniform, [0.1, 0.6, 1.0]);
+                                gl.uniform3fv(shaderProgram.KdUniform, [0.1, 0.6, 1.0]);
+                            }
                         
-                        sendMatricesToShader();
-                        PopMatrix();
+                            sendMatricesToShader();
+                            PopMatrix();
 
-                        gl.drawElements(gl.TRIANGLES, model.modelVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+                            gl.drawElements(gl.TRIANGLES, model.modelVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+                        }   
                     }
                 );
 
@@ -402,6 +466,8 @@
                 initGL(canvas);
 
                 initShaders();
+
+                loadInternalGeometry();
 
                 loadModelsOnGPU();          
 
