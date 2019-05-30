@@ -222,10 +222,8 @@
                 gl.useProgram(shaderProgram);
 
                 shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
-                gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 
                 shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
-                gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
 
                 // shaderProgram.textureCoordsAttribute = gl.getAttribLocation(shaderProgram, "aTexCoord");
                 // gl.enableVertexAttribArray(shaderProgram.textureCoordsAttribute);
@@ -272,7 +270,6 @@
                     gl.useProgram(programLight);
 
                     programLight.vertexPositionAttribute = gl.getAttribLocation(programLight, "aVertexPosition");
-                    gl.enableVertexAttribArray(programLight.vertexPositionAttribute);
             
                     //Light matrix uniforms
                     programLight.mvMatrixLight = gl.getUniformLocation(programLight, "modelViewMatrixLight");
@@ -483,7 +480,7 @@
                 requestAnimationFrame(renderingLoop);
                 processKeyInputs();
 
-                drawSceneFromLight();
+                //drawSceneFromLight();
                 drawSceneFromCamera();
 
                 deltaWheelY = 0;
@@ -559,8 +556,7 @@
                         }   
                     }
                 );
-
-                
+      
                 gl.disableVertexAttribArray(programLight.vertexPositionAttribute);
                 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             }
@@ -580,7 +576,8 @@
                 gl.enable(gl.CULL_FACE);
 
                 gl.useProgram(shaderProgram);
-                //TODO: ENABLE/DISABLE ATTRIBUTES HERE AS IN DRAWSCENEFROMLIGHT?
+                gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+                gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
 
                 mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
                 
@@ -680,10 +677,15 @@
                             sendMatricesToShader();
                             PopMatrix();
 
-                            gl.drawElements(gl.TRIANGLES, model.modelVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+                            gl.drawElements(gl.TRIANGLES, model.modelVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);                           
                         }   
                     }
-                );            
+                );        
+
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, null);
+                gl.disableVertexAttribArray(shaderProgram.vertexPositionAttribute);    
+                gl.disableVertexAttribArray(shaderProgram.vertexNormalAttribute);    
             }
 
             function webGLStart() 
