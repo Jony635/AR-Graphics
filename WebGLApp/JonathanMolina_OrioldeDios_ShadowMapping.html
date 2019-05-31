@@ -482,7 +482,7 @@
             var lightPosition = [4.0, 10.0, 0.0];
             function drawSceneFromLight()
             {
-                //gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
+                gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
 
                 gl.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
 
@@ -501,9 +501,7 @@
                 mat4.identity(mMatrixLight);
                 mat4.translate(mMatrixLight, lightPosition);
                 mat4.rotate(mMatrixLight, deg2Rad(-80), [1,0,0]);
-                
-                //mat4.lookAt(lightPosition, [0,0,0], [0,1,0], mMatrixLight);
-                
+                                
                 mat4.inverse(mMatrixLight, vMatrixLight);
 
                 //DRAW OBJECTS
@@ -568,7 +566,7 @@
       
                 gl.disableVertexAttribArray(programLight.vertexPositionAttribute);
                 gl.useProgram(null);
-                //gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             }
 
             function UpdateCameraTransformMatrix()
