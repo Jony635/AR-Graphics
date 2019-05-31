@@ -475,7 +475,7 @@
                 processKeyInputs();
 
                 drawSceneFromLight();
-                //drawSceneFromCamera();
+                drawSceneFromCamera();
 
                 deltaWheelY = 0;
             }
@@ -548,9 +548,10 @@
                             else if (index == 2)
                             {
                                 mat4.identity(mvMatrix);              
-                                mat4.scale(mvMatrix, [1.5, 1.5, 1.5], mvMatrix);
-                                mat4.rotateX(mvMatrix, deg2Rad(-80), mvMatrix);
+                                
                                 mat4.translate(mvMatrix, [5,-0.5,0], mvMatrix);
+                                mat4.rotateX(mvMatrix, deg2Rad(-80), mvMatrix);
+                                mat4.scale(mvMatrix, [1.5, 1.5, 1.5], mvMatrix);
 
                                 mat4.multiply(vMatrixLight, mvMatrix, mvMatrix);
                             }
@@ -621,7 +622,7 @@
 
                             PushMatrix();
 
-                            mat4.identity(mvMatrix);     
+                            mat4.identity(mvMatrix); 
                             mat4.translate(mvMatrix, [2, -3, 0], mvMatrix); 
                             mat4.rotateX(mvMatrix, deg2Rad(180), mvMatrix); 
                             mat4.scale(mvMatrix, [30, 1, 30], mvMatrix);
