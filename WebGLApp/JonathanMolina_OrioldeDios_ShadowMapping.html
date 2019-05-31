@@ -53,8 +53,6 @@
             varying vec3 normalEye;
             varying vec4 positionEye;
 
-            const vec3 lightPosEye = vec3(-10.0/3.0, 10.0, 0.0);
-
             //Light depth map
             uniform sampler2D lightDepth;
             
@@ -145,8 +143,8 @@
 
             void main(void)
             {
-                //gl_FragColor = encodeFloat(gl_FragCoord.z);
-                gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+                gl_FragColor = encodeFloat(gl_FragCoord.z);
+                //gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
             }
 
         </script>
@@ -293,12 +291,9 @@
             var pMatrixLight = mat4.create();
             
             var mMatrixLight = mat4.create();
-            mat4.identity(mMatrixLight);
-            mat4.lookAt([-10.0/3.0, 10.0, 0.0], [0,0,0], [0,1,0], mMatrixLight);                
 
             var vMatrixLight = mat4.create();
-            mat4.inverse(mMatrixLight, vMatrixLight);
-
+            
             var mvMatrixLight = mat4.create();
 
             function sendMatricesToShader() 
@@ -480,11 +475,11 @@
                 processKeyInputs();
 
                 drawSceneFromLight();
-                drawSceneFromCamera();
+                //drawSceneFromCamera();
 
                 deltaWheelY = 0;
             }
-
+            var lightPosition = [4.0, 10.0, 0.0];
             function drawSceneFromLight()
             {
                 //gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
@@ -492,7 +487,8 @@
                 gl.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
 
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
+                gl.disable(gl.CULL_FACE);
+                
                 gl.useProgram(programLight);
 
                 gl.enableVertexAttribArray(programLight.vertexPositionAttribute);
@@ -501,11 +497,20 @@
 
                 gl.uniformMatrix4fv(programLight.pMatrixLightUniform, false, pMatrixLight);
 
+                //Update vMatrixLight
+                mat4.identity(mMatrixLight);
+                mat4.translate(mMatrixLight, lightPosition);
+                mat4.rotate(mMatrixLight, deg2Rad(-80), [1,0,0]);
+                
+                //mat4.lookAt(lightPosition, [0,0,0], [0,1,0], mMatrixLight);
+                
+                mat4.inverse(mMatrixLight, vMatrixLight);
+
                 //DRAW OBJECTS
                 models.forEach
                 ( 
                     function(model, index)
-                    {
+                    {        
                         gl.bindBuffer(gl.ARRAY_BUFFER, model.modelVertexPosBuffer);
                         gl.vertexAttribPointer(programLight.vertexPositionAttribute, model.modelVertexPosBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
@@ -514,9 +519,11 @@
                             PushMatrix();
 
                             mat4.identity(mvMatrix);     
-                            mat4.translate(mvMatrix, [2, -3, 0], mvMatrix);
-                            mat4.rotateX(mvMatrix, deg2Rad(180), mvMatrix);
-                            mat4.scale(mvMatrix, [30, 1, 30], mvMatrix);
+                                                 
+                            mat4.translate(mvMatrix, [2, -3, 0], mvMatrix);   
+                            mat4.rotateX(mvMatrix, deg2Rad(180), mvMatrix);    
+                            mat4.scale(mvMatrix, [30, 1, 30], mvMatrix);                   
+                            
                             mat4.multiply(vMatrixLight, mvMatrix, mvMatrix);
 
                             //Uniforms
@@ -534,16 +541,17 @@
 
                             if(index == 1)
                             {
-                                mat4.identity(mvMatrix);      
+                                mat4.identity(mvMatrix);
                                 mat4.scale(mvMatrix, [0.1, 0.1, 0.1], mvMatrix);
                                 mat4.multiply(vMatrixLight, mvMatrix, mvMatrix);
                             }
                             else if (index == 2)
                             {
-                                mat4.identity(mvMatrix);
-                                mat4.translate(mvMatrix, [5,-0.5,0], mvMatrix);
-                                mat4.rotateX(mvMatrix, deg2Rad(-80), mvMatrix);
+                                mat4.identity(mvMatrix);              
                                 mat4.scale(mvMatrix, [1.5, 1.5, 1.5], mvMatrix);
+                                mat4.rotateX(mvMatrix, deg2Rad(-80), mvMatrix);
+                                mat4.translate(mvMatrix, [5,-0.5,0], mvMatrix);
+
                                 mat4.multiply(vMatrixLight, mvMatrix, mvMatrix);
                             }
                         
@@ -558,6 +566,7 @@
                 );
       
                 gl.disableVertexAttribArray(programLight.vertexPositionAttribute);
+                gl.useProgram(null);
                 //gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             }
 
@@ -573,7 +582,7 @@
             {
                 gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                gl.enable(gl.CULL_FACE);
+                //gl.enable(gl.CULL_FACE);
 
                 gl.useProgram(shaderProgram);
                 gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
@@ -593,7 +602,7 @@
                 gl.bindTexture(gl.TEXTURE_2D, rttTexture);
                 gl.uniform1i(shaderProgram.lightDepthUniform, 0);
 
-                gl.uniform3fv(shaderProgram.lightDirUniform, [0.0, 5.0, 1.0]);
+                gl.uniform3fv(shaderProgram.lightDirUniform, [lightPosition[0], lightPosition[1], lightPosition[2]]);
 
                 //DRAW OBJECTS
                 models.forEach
